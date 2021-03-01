@@ -67,9 +67,6 @@ def parse_arguments():  # noqa
         )
     default_user_prefix = ''
     default_user_zshshare = 'functions'
-    default_system_destdir = '/'
-    default_system_prefix = '/usr/local'
-    default_system_zshshare = '/usr/share/zsh/site-functions'
     default_clink_dir = os.path.join(os.getenv('LOCALAPPDATA', ''), 'clink')
 
     parser = ArgumentParser(
@@ -148,8 +145,11 @@ def parse_arguments():  # noqa
             )
             sys.exit(1)
 
+        default_system_destdir = '/'
         args.destdir = default_system_destdir
+        default_system_prefix = '/usr/local'
         args.prefix = default_system_prefix
+        default_system_zshshare = '/usr/share/zsh/site-functions'
         args.zshshare = default_system_zshshare
 
     return args

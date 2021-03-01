@@ -143,9 +143,7 @@ class _AttributeHolder(object):
 
     def __repr__(self):
         type_name = type(self).__name__
-        arg_strings = []
-        for arg in self._get_args():
-            arg_strings.append(repr(arg))
+        arg_strings = [repr(arg) for arg in self._get_args()]
         for name, value in self._get_kwargs():
             arg_strings.append('%s=%r' % (name, value))
         return '%s(%s)' % (type_name, ', '.join(arg_strings))
@@ -286,7 +284,7 @@ class HelpFormatter(object):
                 invocations.append(get_invocation(subaction))
 
             # update the maximum item length
-            invocation_length = max([len(s) for s in invocations])
+            invocation_length = max(len(s) for s in invocations)
             action_length = invocation_length + self._current_indent
             self._action_max_length = max(
                 self._action_max_length,
@@ -311,11 +309,8 @@ class HelpFormatter(object):
         return help
 
     def _join_parts(self, part_strings):
-        return ''.join([
-            part
-            for part in part_strings
-            if part and part is not SUPPRESS
-        ])
+        return ''.join(part for part in part_strings
+                if part and part is not SUPPRESS)
 
     def _format_usage(self, usage, actions, groups, prefix):
         if prefix is None:
@@ -364,10 +359,7 @@ class HelpFormatter(object):
                 def get_lines(parts, indent, prefix=None):
                     lines = []
                     line = []
-                    if prefix is not None:
-                        line_len = len(prefix) - 1
-                    else:
-                        line_len = len(indent) - 1
+                    line_len = len(prefix) - 1 if prefix is not None else len(indent) - 1
                     for part in parts:
                         if line_len + 1 + len(part) > text_width:
                             lines.append(indent + ' '.join(line))
@@ -603,21 +595,20 @@ class HelpFormatter(object):
     def _format_args(self, action, default_metavar):
         get_metavar = self._metavar_formatter(action, default_metavar)
         if action.nargs is None:
-            result = '%s' % get_metavar(1)
+            return '%s' % get_metavar(1)
         elif action.nargs == OPTIONAL:
-            result = '[%s]' % get_metavar(1)
+            return '[%s]' % get_metavar(1)
         elif action.nargs == ZERO_OR_MORE:
-            result = '[%s [%s ...]]' % get_metavar(2)
+            return '[%s [%s ...]]' % get_metavar(2)
         elif action.nargs == ONE_OR_MORE:
-            result = '%s [%s ...]' % get_metavar(2)
+            return '%s [%s ...]' % get_metavar(2)
         elif action.nargs == REMAINDER:
-            result = '...'
+            return '...'
         elif action.nargs == PARSER:
-            result = '%s ...' % get_metavar(1)
+            return '%s ...' % get_metavar(1)
         else:
             formats = ['%s' for _ in range(action.nargs)]
-            result = ' '.join(formats) % get_metavar(action.nargs)
-        return result
+            return ' '.join(formats) % get_metavar(action.nargs)
 
     def _expand_help(self, action):
         params = dict(vars(action), prog=self._prog)
@@ -628,7 +619,7 @@ class HelpFormatter(object):
             if hasattr(params[name], '__name__'):
                 params[name] = params[name].__name__
         if params.get('choices') is not None:
-            choices_str = ', '.join([str(c) for c in params['choices']])
+            choices_str = ', '.join(str(c) for c in params['choices'])
             params['choices'] = choices_str
         return self._get_help_string(action) % params
 
@@ -639,8 +630,7 @@ class HelpFormatter(object):
             pass
         else:
             self._indent()
-            for subaction in get_subactions():
-                yield subaction
+            yield from get_subactions()
             self._dedent()
 
     def _split_lines(self, text, width):
@@ -667,7 +657,7 @@ class RawDescriptionHelpFormatter(HelpFormatter):
     """
 
     def _fill_text(self, text, width, indent):
-        return ''.join([indent + line for line in text.splitlines(True)])
+        return ''.join(indent + line for line in text.splitlines(True))
 
 
 class RawTextHelpFormatter(RawDescriptionHelpFormatter):
@@ -692,11 +682,10 @@ class ArgumentDefaultsHelpFormatter(HelpFormatter):
 
     def _get_help_string(self, action):
         help = action.help
-        if '%(default)' not in action.help:
-            if action.default is not SUPPRESS:
-                defaulting_nargs = [OPTIONAL, ZERO_OR_MORE]
-                if action.option_strings or action.nargs in defaulting_nargs:
-                    help += ' (default: %(default)s)'
+        if '%(default)' not in action.help and action.default is not SUPPRESS:
+            defaulting_nargs = [OPTIONAL, ZERO_OR_MORE]
+            if action.option_strings or action.nargs in defaulting_nargs:
+                help += ' (default: %(default)s)'
         return help
 
 
@@ -1214,7 +1203,7 @@ class FileType(object):
 
     def __repr__(self):
         args = [self._mode, self._bufsize]
-        args_str = ', '.join([repr(arg) for arg in args if arg is not None])
+        args_str = ', '.join(repr(arg) for arg in args if arg is not None)
         return '%s(%s)' % (type(self).__name__, args_str)
 
 # ===========================
@@ -1394,9 +1383,11 @@ class _ActionsContainer(object):
 
         # set the flag if any option strings look like negative numbers
         for option_string in action.option_strings:
-            if self._negative_number_matcher.match(option_string):
-                if not self._has_negative_number_optionals:
-                    self._has_negative_number_optionals.append(True)
+            if (
+                self._negative_number_matcher.match(option_string)
+                and not self._has_negative_number_optionals
+            ):
+                self._has_negative_number_optionals.append(True)
 
         # return the created action
         return action
@@ -1468,7 +1459,7 @@ class _ActionsContainer(object):
         long_option_strings = []
         for option_string in args:
             # error on strings that don't start with an appropriate prefix
-            if not option_string[0] in self.prefix_chars:
+            if option_string[0] not in self.prefix_chars:
                 msg = _(
                     'invalid option string %r: '
                     'must start with a character %r',
@@ -1478,10 +1469,12 @@ class _ActionsContainer(object):
 
             # strings starting with two prefix characters are long options
             option_strings.append(option_string)
-            if option_string[0] in self.prefix_chars:
-                if len(option_string) > 1:
-                    if option_string[1] in self.prefix_chars:
-                        long_option_strings.append(option_string)
+            if (
+                option_string[0] in self.prefix_chars
+                and len(option_string) > 1
+                and option_string[1] in self.prefix_chars
+            ):
+                long_option_strings.append(option_string)
 
         # infer destination, '--foo-bar' -> 'foo_bar' and '-x' -> 'x'
         dest = kwargs.pop('dest', None)
@@ -1528,11 +1521,8 @@ class _ActionsContainer(object):
 
     def _handle_conflict_error(self, action, conflicting_actions):
         message = _('conflicting option string(s): %s')
-        conflict_string = ', '.join([
-            option_string
-            for option_string, action
-            in conflicting_actions
-        ])
+        conflict_string = ', '.join(option_string for option_string, action
+                in conflicting_actions)
         raise ArgumentError(action, message % conflict_string)
 
     def _handle_conflict_resolve(self, action, conflicting_actions):
@@ -1798,13 +1788,15 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
 
         # add any action defaults that aren't present
         for action in self._actions:
-            if action.dest is not SUPPRESS:
-                if not hasattr(namespace, action.dest):
-                    if action.default is not SUPPRESS:
-                        default = action.default
-                        if isinstance(action.default, basestring):
-                            default = self._get_value(action, default)
-                        setattr(namespace, action.dest, default)
+            if (
+                action.dest is not SUPPRESS
+                and not hasattr(namespace, action.dest)
+                and action.default is not SUPPRESS
+            ):
+                default = action.default
+                if isinstance(action.default, basestring):
+                    default = self._get_value(action, default)
+                setattr(namespace, action.dest, default)
 
         # add any parser defaults that aren't present
         for dest in self._defaults:
@@ -2117,10 +2109,7 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
         result = []
         for i in range(len(actions), 0, -1):
             actions_slice = actions[:i]
-            pattern = ''.join([
-                self._get_nargs_pattern(action)
-                for action in actions_slice
-            ])
+            pattern = ''.join(self._get_nargs_pattern(action) for action in actions_slice)
             match = _re.match(pattern, arg_strings_pattern)
             if match is not None:
                 result.extend([len(string) for string in match.groups()])

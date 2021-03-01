@@ -117,12 +117,8 @@ def last(xs):
     it = iter(xs)
     tmp = None
     try:
-        if is_python3():
-            while True:
-                tmp = it.__next__()
-        else:
-            while True:
-                tmp = it.next()
+        while True:
+            tmp = it.__next__() if is_python3() else it.next()
     except StopIteration:
         return tmp
 

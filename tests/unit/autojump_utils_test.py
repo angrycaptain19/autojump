@@ -122,8 +122,8 @@ def test_in_bash():
         os.environ['SHELL'] = path
         assert in_bash()
 
-    for path in ['/bin/zsh', '/usr/bin/zsh']:
-        os.environ['SHELL'] = '/usr/bin/zsh'
+    os.environ['SHELL'] = '/usr/bin/zsh'
+    for _ in ['/bin/zsh', '/usr/bin/zsh']:
         assert not in_bash()
 
 
